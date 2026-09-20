@@ -63,7 +63,11 @@ class Database:
         await db.executescript(SCHEMA)
         for name, qs in DEFAULT_CATEGORIES.items():
             await db.execute("INSERT OR IGNORE INTO categories(name) VALUES(?)", (name,))
-            row = await db.execute_fetchone("SELECT id FROM categories WHERE name=?", (name,))
+            async with db.execute(
+    "SELECT id FROM categories WHERE name=?",
+    (name,)
+) as cursor:
+    row = await cursor.fetchone()
             count = await db.execute_fetchone("SELECT COUNT(*) c FROM questions WHERE category_id=?", (row["id"],))
             if count["c"] == 0:
                 await db.executemany("INSERT INTO questions(category_id,kind,text) VALUES(?,?,?)", [(row["id"], k, t) for k,t in qs])
